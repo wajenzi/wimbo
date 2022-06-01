@@ -1,0 +1,70 @@
+﻿@page "/fetchdata"
+@using wimbo.Data
+@using Microsoft.Extensions.Options
+
+<PageTitle>Federation Members</PageTitle>
+
+
+
+@if (FederationMembers == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <h1>My federation member</h1>
+    <div>
+        @* <div>PubKey: @MyMasterNode?.PubKey</div>
+        <div>CollateralAmount: @MyMasterNode?.CollateralAmount</div> *@
+        <div>LastActiveTime: @MyMasterNode?.LastActiveTime </div>
+        <div>PeriodOfInActivity: @MyMasterNode?.PeriodOfInActivity </div>
+    </div>
+    <h1>Federation Members: @FederationMembers?.Count()</h1>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>PubKey</th>
+                <th>CollateralAmount</th>
+                <th>LastActiveTime</th>
+                <th>PeriodOfInActivity</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var federationMember in FederationMembers)
+            {
+                <tr>
+                    <td>@federationMember.PubKey</td>
+                    <td>@federationMember.CollateralAmount</td>
+                    <td>@federationMember.LastActiveTime </td>
+                    <td>@federationMember.PeriodOfInActivity </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private FederationMember[]? FederationMembers;
+    private FederationMember? MyMasterNode;
+    public MasterNodeOptions? MasterNodeOptions => MasterNodeOptionsAccessor.Value;
+
+    [Inject]    
+    protected HttpClient HttpClient { get; set; } = default!; 
+
+    [Inject]
+    protected IOptions<MasterNodeOptions> MasterNodeOptionsAccessor { get; set; } = default!;
+
+    protected override async Task OnInitializedAsync()
+    {
+        FederationMembers = await HttpClient.GetFromJsonAsync<FederationMember[]>("http://localhost:37223/api/Federation/members");
+        MyMasterNode = FederationMembers?.FirstOrDefault(x => x.PubKey == MasterNodeOptions?.PubKey);
+    }
+
+    public class FederationMember
+    {
+        public string PubKey { get; set; } = default!;
+        public decimal CollateralAmount { get; set; } = default!;
+        public DateTime? LastActiveTime { get; set; }
+        public TimeSpan? PeriodOfInActivity { get; set; }
+    }
+}
